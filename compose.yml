@@ -1,0 +1,29 @@
+services:
+  database:
+    image: postgres:18.1-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: database
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - dev_data:/var/lib/postgresql
+    networks:
+      - dev-network
+    expose:
+      - "5432"
+    ports:
+      - "127.0.0.1:5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+networks:
+  dev-network:
+    driver: bridge
+volumes:
+  dev_data:
+    driver: local
