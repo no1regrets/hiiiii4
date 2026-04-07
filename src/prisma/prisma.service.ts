@@ -5,6 +5,7 @@ import {
     OnModuleDestroy,
 } from '@nestjs/common';
 import { createPrismaClient, ExtendedPrismaClient } from '../../prisma';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * NestJS Prisma service. Does not extend PrismaClient; holds a single client
@@ -17,9 +18,9 @@ class PrismaServiceImpl implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(PrismaService.name);
     private _client: ExtendedPrismaClient;
     
-    constructor() {
+    constructor(private readonly config: ConfigService) {
         // Always take DATABASE_URL from getServerEnv() at runtime; pg accepts only string (avoids ERR_INVALID_ARG_TYPE).
-        const DATABASE_URL = "postgresql://postgres:postgres@127.0.0.1:5432/database?schema=public"
+        const DATABASE_URL = this.config.get<string>('DATABASE_URL');
         const url =
             typeof DATABASE_URL === 'string' && DATABASE_URL.trim()
                 ? DATABASE_URL.trim()

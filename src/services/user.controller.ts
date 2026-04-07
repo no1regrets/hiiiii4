@@ -1,4 +1,4 @@
-import {Controller, Post, Query, Body, Patch, Delete, Param, Get, Put} from "@nestjs/common"
+import {Controller, Post, Query, Body, Patch, Delete, Param, Get, Put, ParseIntPipe} from "@nestjs/common"
 import {UserService} from "./user.services"
 import {CreateUserDto, UpdateUserDto} from "./dto/user.dto"
 
@@ -16,11 +16,7 @@ export class UserController {
     }
 
     @Post()
-    async createUser(@Query("name") name: string, @Query("email") email: string){
-        const dto : CreateUserDto = {
-            name: name,
-            email: email
-        }
+    async createUser(@Query() dto: CreateUserDto){
         return await this.userService.createUser(dto)
     }
     @Patch()
@@ -32,7 +28,7 @@ export class UserController {
         return await this.userService.deleteUser(id)
     }
     @Put(":id")
-    async updateRole(@Query("roll") role: string, @Param("id") id: number){
+    async updateRole(@Query("roll") role: string, @Param("id", ParseIntPipe) id: number){
         let role2 = decodeURI(role)
         return await this.userService.updateRole(role2, id)
     }
