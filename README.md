@@ -1,98 +1,128 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Telegram-бот: шаблон на NestJS + Telegraf
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Минимальный каркас для старта нового бота: команды `/start` и `/help`, кнопка «Меню», действия **Ping** и **Echo**. Данные пользователя Telegram сохраняются в **PostgreSQL** через **Prisma** при первом `/start`. REST API нет.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Требования
 
-## Description
+- Node.js 20+ (рекомендуется актуальный LTS)
+- npm
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Быстрый старт
 
-## Project setup
+1. Установите зависимости:
 
-```bash
-$ npm install
-```
+   ```bash
+   npm install
+   ```
 
-## Compile and run the project
+2. Создайте бота в Telegram через [@BotFather](https://t.me/BotFather), скопируйте токен.
 
-```bash
-# development
-$ npm run start
+3. Скопируйте пример окружения и подставьте токен:
 
-# watch mode
-$ npm run start:dev
+   ```bash
+   cp .env.example .env
+   ```
 
-# production mode
-$ npm run start:prod
-```
+   В `.env` задайте `BOT_TOKEN=...` и **`DATABASE_URL=...`** (к БД из шага ниже).
 
-## Run tests
+4. Поднимите PostgreSQL и примените миграции:
 
-```bash
-# unit tests
-$ npm run test
+   ```bash
+   docker compose up -d
+   npx prisma migrate deploy
+   ```
 
-# e2e tests
-$ npm run test:e2e
+5. Запуск в режиме разработки:
 
-# test coverage
-$ npm run test:cov
-```
+   ```bash
+   npm run start:dev
+   ```
 
-## Deployment
+6. В Telegram откройте бота и отправьте `/start`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Prisma 7
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- Строка подключения к БД задаётся в **`prisma.config.ts`** (и в `.env` как `DATABASE_URL`), не в `schema.prisma`.
+- Рантайм: `PrismaService` создаёт клиент через `new PrismaClient({ adapter: new PrismaPg({ connectionString }) })`.
+- После изменения схемы: `npm run prisma:migrate` или `npx prisma generate`.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+### Ошибка «Database `database` does not exist» (P1003)
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+В `DATABASE_URL` должно быть имя БД, как в Docker: **`nest_bot`**, не `database`. Пример:  
+`postgresql://postgres:postgres@127.0.0.1:5432/nest_bot?schema=public`
 
-## Resources
+## Telegram: `ETIMEDOUT` к api.telegram.org
 
-Check out a few resources that may come in handy when working with NestJS:
+Запрос `getMe` идёт на серверы Telegram. Если в логах **`FetchError`** / **`ETIMEDOUT`**, сеть до `api.telegram.org` недоступна (файрвол, блокировка, офисная сеть).
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Что можно сделать:
 
-## Support
+1. **VPN** или доступ в интернет, где Telegram не режется.
+2. **Прокси** — в `.env` задайте `TELEGRAM_HTTPS_PROXY=http://хост:порт` (или стандартный **`HTTPS_PROXY`**) — запросы бота пойдут через [https-proxy-agent](https://www.npmjs.com/package/https-proxy-agent).
+3. **Только API без бота** — `TELEGRAM_SKIP_LAUNCH=true` (Nest и Prisma поднимутся, long polling не стартует).
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Локальная PostgreSQL (Docker)
 
-## Stay in touch
+1. Поднимите БД:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+   ```bash
+   docker compose up -d
+   ```
 
-## License
+2. Скопируйте строку из [`.env.example`](.env.example) в `.env` как `DATABASE_URL=...` (или свою), если ещё не задали.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+3. Остановка и удаление контейнера (данные в volume сохраняются):
+
+   ```bash
+   docker compose down
+   ```
+
+## Скрипты
+
+| Команда           | Назначение        |
+|-------------------|-------------------|
+| `npm run start:dev` | Разработка (watch) |
+| `npm run build`   | `prisma generate` + сборка TypeScript |
+| `npm run start:prod` | Запуск из `dist` |
+| `npm run lint`    | ESLint            |
+| `npm test`        | Unit-тесты (Jest) |
+| `npm run test:e2e` | Проверка компиляции модуля |
+| `npm run prisma:migrate` | `prisma migrate dev` (разработка) |
+| `npm run prisma:deploy` | `prisma migrate deploy` (прод/CI) |
+| `npm run prisma:studio` | Prisma Studio |
+
+## Структура
+
+- [`src/main.ts`](src/main.ts) — точка входа Nest.
+- [`src/app.module.ts`](src/app.module.ts) — `ConfigModule`, **`PrismaModule`**, `TelegrafModule`.
+- [`src/prisma/`](src/prisma/) — глобальный модуль и `PrismaService` (`PrismaClient` + **`@prisma/adapter-pg`** по `DATABASE_URL`).
+- [`prisma/schema.prisma`](prisma/schema.prisma) — модели (в datasource **нет** `url` — это [Prisma ORM 7](https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)).
+- [`prisma.config.ts`](prisma.config.ts) — URL для CLI (миграции) и `datasource.url` из `DATABASE_URL`.
+- `generated/prisma/` — сгенерированный клиент Prisma 7 (`prisma generate`), каталог в `.gitignore`.
+- [`src/services/telegram/`](src/services/telegram/) — модуль бота:
+  - `telegram.update.ts` — хендлеры команд и callback;
+  - `keyboards.ts` — inline-клавиатуры;
+  - `constants.ts` — строки callback-data.
+
+## Как добавить кнопку или сценарий
+
+1. В [`src/services/telegram/constants.ts`](src/services/telegram/constants.ts) добавьте константу callback-data (например `export const CALLBACK_ABOUT = 'about'`).
+2. В [`src/services/telegram/keyboards.ts`](src/services/telegram/keyboards.ts) добавьте кнопку `Markup.button.callback('Текст', CALLBACK_ABOUT)`.
+3. В [`src/services/telegram/telegram.update.ts`](src/services/telegram/telegram.update.ts) добавьте метод с декоратором `@Action(CALLBACK_ABOUT)`.
+
+Для новых команд используйте `@Command('имя')` или встроенные `@Start()` / `@Help()` из `nestjs-telegraf`.
+
+## Переменные окружения
+
+| Переменная   | Описание |
+|-------------|----------|
+| `BOT_TOKEN` | **Обязательно.** Токен бота от BotFather. |
+| `DATABASE_URL` | **Обязательно для запуска приложения.** Строка подключения к PostgreSQL (см. `compose.yml`). |
+| `PORT`      | Опционально. Порт HTTP-сервера Nest (по умолчанию `3000`). |
+| `TELEGRAM_SKIP_LAUNCH` | Опционально. Если `true`, не вызывается `bot.launch()` (тесты, CI, нет доступа к Telegram). |
+| `TELEGRAM_HTTPS_PROXY` | Опционально. URL HTTPS-прокси для запросов к API Telegram (например `http://127.0.0.1:7890`). |
+| `HTTPS_PROXY` / `https_proxy` | Опционально. То же, что прокси: если задано, используется при отсутствии `TELEGRAM_HTTPS_PROXY`. |
+
+## Лицензия
+
+UNLICENSED (частный/учебный шаблон — при необходимости смените в `package.json`).

@@ -1,69 +1,33 @@
 import {
-    Injectable,
-    Logger,
-    OnModuleInit,
-    OnModuleDestroy,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
 } from '@nestjs/common';
-import { createPrismaClient, ExtendedPrismaClient } from '../../prisma';
 import { ConfigService } from '@nestjs/config';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../../generated/prisma/client';
 
-/**
- * NestJS Prisma service. Does not extend PrismaClient; holds a single client
- * created with the driver adapter and delegates to it. This avoids the Prisma 7.x
- * issue where extending PrismaClient and passing an adapter in super() causes
- * double-initialization and conflicting adapter configuration.
- */
 @Injectable()
-class PrismaServiceImpl implements OnModuleInit, OnModuleDestroy {
-    private readonly logger = new Logger(PrismaService.name);
-    private _client: ExtendedPrismaClient;
-    
-    constructor(private readonly config: ConfigService) {
-        // Always take DATABASE_URL from getServerEnv() at runtime; pg accepts only string (avoids ERR_INVALID_ARG_TYPE).
-        const DATABASE_URL = this.config.get<string>('DATABASE_URL');
-        const url =
-            typeof DATABASE_URL === 'string' && DATABASE_URL.trim()
-                ? DATABASE_URL.trim()
-                : DATABASE_URL != null && typeof DATABASE_URL === 'object' && 'host' in (DATABASE_URL as object)
-                  ? (() => {
-                        const o = DATABASE_URL as Record<string, unknown>;
-                        const enc = (s: string) => encodeURIComponent(s);
-                        return `postgresql://${enc(String(o.user ?? 'postgres'))}:${enc(String(o.password ?? ''))}@${String(o.host ?? '127.0.0.1')}:${String(o.port ?? 5432)}/${enc(String(o.database ?? o.user ?? 'postgres'))}?schema=public`;
-                    })()
-                  : '';
-        if (!url) {
-            throw new Error('DATABASE_URL is not set or not a string. Set it in .env or DB_* vars.');
-        }
-        this._client = createPrismaClient(url);
-        return new Proxy(this, {
-            get(target, prop: string | symbol) {
-                if (prop in target) {
-                    return (target as Record<string | symbol, unknown>)[prop];
-                }
-                return (target._client as unknown as Record<string | symbol, unknown>)[prop];
-            },
-        }) as this;
-    }
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly logger = new Logger(PrismaService.name);
 
-    async onModuleInit() {
-        this.logger.log('Connecting to database...');
-        try {
-            await this._client.$connect();
-        } catch (e) {
-            this.logger.error('Connecting to database...', e);
-        }
-    }
+  constructor(config: ConfigService) {
+    const connectionString = config.getOrThrow<string>('DATABASE_URL');
+    const adapter = new PrismaPg({ connectionString });
+    super({ adapter });
+  }
 
-    async onModuleDestroy() {
-        this.logger.log('Disconnecting from database...');
-        await this._client.$disconnect();
-    }
+  async onModuleInit() {
+    this.logger.log('Connecting to database...');
+    await this.$connect();
+  }
 
-    get client(): ExtendedPrismaClient {
-        return this._client;
-    }
-};
-
-export const PrismaService = PrismaServiceImpl;
-
-export type PrismaService = InstanceType<typeof PrismaServiceImpl> & ExtendedPrismaClient;
+  async onModuleDestroy() {
+    this.logger.log('Disconnecting from database...');
+    await this.$disconnect();
+  }
+}

@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { TelegramService } from './telegram.service';
 import { TelegramUpdate } from './telegram.update';
-import { PrismaService } from '../../prisma/prisma.service';
+import { TelegramService } from './telegram.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Module({
-  providers: [TelegramService, TelegramUpdate, PrismaService],
+  providers: [TelegramUpdate, TelegramService, PrismaService],
 })
 export class TelegramModule {}
-  

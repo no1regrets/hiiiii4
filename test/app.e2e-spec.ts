@@ -1,25 +1,29 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { Test } from '@nestjs/testing';
+import { AppModule } from '../src/app.module';
+import { PrismaService } from '../src/prisma/prisma.service';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
-
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+describe('AppModule (e2e)', () => {
+  beforeAll(() => {
+    process.env.BOT_TOKEN = '000000:dummy-token-for-compile-tests-only';
+    process.env.TELEGRAM_SKIP_LAUNCH = 'true';
+    process.env.DATABASE_URL =
+      'postgresql://postgres:postgres@127.0.0.1:5432/nest_bot?schema=public';
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('compiles (без app.init — без telegraf launch и без реального Prisma)', async () => {
+    const mockPrisma = {
+      onModuleInit: () => Promise.resolve(),
+      onModuleDestroy: () => Promise.resolve(),
+      user: { upsert: jest.fn().mockResolvedValue({}) },
+    } as unknown as PrismaService;
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(PrismaService)
+      .useValue(mockPrisma)
+      .compile();
+
+    expect(moduleRef).toBeDefined();
   });
 });

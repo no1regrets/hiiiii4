@@ -1,77 +1,46 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma.service';
+import { Start, Hears, Ctx } from 'nestjs-telegraf';
+import type { Context } from 'telegraf';
+import { PrismaService } from '../../prisma/prisma.service';
+import { mainReplyKeyboard } from './keyboards';
+import { UserDto } from './dto/user.dto';
 
-@Injectable()
+
 export class TelegramService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
-    async getGroupByFirstNumber(number: string){
-        const group = this.prisma.group.findMany({});
-        let k = [];
-        (await group).forEach(g => {
-            let i = g.name.split('-')[0]
-            if(i === number){
-                k.push(g)
-            }
-        });
-        if(k.length < 1){
-            return ''
-        }else{
-            return k
+    async upsertUser(dto: UserDto) {
+        console.log("Upserting user:", {dto});
+        await this.prisma.user.upsert({
+            where: { telegramId: dto.telegramId },
+            create: {
+                telegramId: dto.telegramId,
+                username: dto.username ?? null,
+                firstName: dto.firstName ?? null,
+            },
+            update: {
+                username: dto.username ?? null,
+                firstName: dto.firstName ?? null,
+            },
         }
-    }
-
-    async getUserByLastName( last_name){
-        const allUser = await this.prisma.user.findMany({
-            where:{
-                teacher: true
-            }
-        })
-        let k = [];
-
-        allUser.forEach(u => {
-            let l = u.name.split(' ')[0]
-            if(l === last_name){
-                k.push(u)
-            }
-        });
-
-        if(k.length < 1){
-            return ''
-        }else{
-            return k
+        );
+        await this.prisma.refSystem.upsert({
+            where: { id: dto.telegramId },
+            create: {
+                id: dto.telegramId,
+                User: { connect: { telegramId: dto.telegramId } },
+            },
+            update: {},
         }
+        );
+        return "ok";
     }
 
-    async getUserByName(name){
-        return this.prisma.user.findFirst({
-            where:{
-                name: name,
-                teacher: true
-            }
-        })
-    }
 
-    async getPart(name, date){
-        const parts = await this.prisma.part.findMany({
-            where: {
-                type: 'parts',
-                teacher: name,
-                date: date
-            }
-        })
-        return parts.filter(v => v.group != 'empty')
-    }
 
-    async getPartByGroup(name, date){
-        const parts = await this.prisma.part.findMany({
-            where: {
-                type: 'parts',
-                group: name,
-                date: date
-            }
-        })
-        return parts.filter(v => v.teacher != 'empty')
+    async getRef(telegramId: number) {
+        const refsys = await this.prisma.refSystem.findFirst({
+            where: { id: telegramId }, include: { User: true }
+        });
+        return refsys;
     }
-} 
- 
+}
