@@ -16,3 +16,13 @@ export const REPLY_BTN_REF = '🤝 Пригласить друга';
 export const REPLY_BTN_SUPPORT = '🛠 Поддержка';
 export const REPLY_BTN_BACK = '🔙 Назад';
 export const REPLY_BTN_AGENT = '🤖 Агент поддержки';
+export const REPLY_BTN_ADMIN_MAIN = '⚙️ Админ-панель';
+
+export const REPLY_ADMIN_ADD_ITEM = '➕ Добавить товар';
+export const REPLY_ADMIN_REMOVE_ITEM = '➖ Удалить товар';
+export const REPLY_ADMIN_EDIT_ITEM = '✏️ Редактировать товар';
+export const REPLY_ADMIN_PIN_PRODUCT = '📌 Закрепить товар';
+export const REPLY_ADMIN_ADD_BALANCE = '➕ Пополнить баланс';
+export const REPLY_ADMIN_REMOVE_BALANCE = '➖ Списать баланс';
+export const REPLY_ADMIN_FIND_USER = '🔍 Найти пользователя';
+export const REPLY_ADMIN_BROADCAST = '📢 Рассылка';

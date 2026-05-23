@@ -1,7 +1,8 @@
-import { IsString, IsInt, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsNotEmpty, IsNumber } from 'class-validator';
+import { isBigInt64Array } from 'node:util/types';
 
 export class UserDto {
-  @IsInt()
+  @IsNumber()
   @IsNotEmpty()
   telegramId!: number;
   
@@ -13,4 +14,8 @@ export class UserDto {
   @IsString()
   @IsNotEmpty()
   firstName?: string;
+
+  @IsNumber()
+  @IsOptional()
+  refId?: number;
 }

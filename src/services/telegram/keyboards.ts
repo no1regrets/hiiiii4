@@ -13,7 +13,16 @@ import {
   REPLY_BTN_REF,
   REPLY_BTN_SUPPORT,
   REPLY_BTN_BACK,
-  REPLY_BTN_AGENT
+  REPLY_BTN_AGENT,
+  REPLY_BTN_ADMIN_MAIN,
+  REPLY_ADMIN_BROADCAST,
+  REPLY_ADMIN_FIND_USER,
+  REPLY_ADMIN_REMOVE_BALANCE,
+  REPLY_ADMIN_ADD_BALANCE,
+  REPLY_ADMIN_PIN_PRODUCT,
+  REPLY_ADMIN_EDIT_ITEM,
+  REPLY_ADMIN_REMOVE_ITEM,
+  REPLY_ADMIN_ADD_ITEM
 } from './constants';
 
 /** Inline: кнопки под сообщением (callback) */
@@ -45,11 +54,31 @@ export function refReplyKeyboard() {
 }
 
 /** Reply: клавиатура под полем ввода чата (не callback — шлёт текст) */
-export function mainReplyKeyboard() {
+export function mainReplyKeyboard(isAdmin: boolean = false) {
+  if (isAdmin === false) {
   return Markup.keyboard([
     [REPLY_BTN_LIST, REPLY_BTN_BALANCE],
     [REPLY_BTN_ORDERS, REPLY_BTN_REF],
     [REPLY_BTN_SUPPORT],
+  ]).resize();
+}else{
+  return Markup.keyboard([
+    [REPLY_BTN_LIST, REPLY_BTN_BALANCE],
+    [REPLY_BTN_ORDERS, REPLY_BTN_REF],
+    [REPLY_BTN_SUPPORT],
+    [REPLY_BTN_ADMIN_MAIN],
+  ]).resize();
+}
+}
+
+export function adminMainKeyboard() {
+  return Markup.keyboard([
+    [REPLY_ADMIN_ADD_ITEM, REPLY_ADMIN_REMOVE_ITEM],
+    [REPLY_ADMIN_EDIT_ITEM, REPLY_ADMIN_PIN_PRODUCT],
+    [REPLY_ADMIN_ADD_BALANCE, REPLY_ADMIN_REMOVE_BALANCE],
+    [REPLY_ADMIN_FIND_USER],
+    [REPLY_ADMIN_BROADCAST],
+    [REPLY_BTN_BACK],
   ]).resize();
 }
 

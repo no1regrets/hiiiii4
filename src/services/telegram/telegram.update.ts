@@ -13,6 +13,7 @@ import {
   CALLBACK_ECHO,
   CALLBACK_MENU,
   CALLBACK_PING,
+  REPLY_BTN_ADMIN_MAIN,
   REPLY_BTN_BACK,
   REPLY_BTN_ECHO,
   REPLY_BTN_HELP,
@@ -28,34 +29,39 @@ import {
   welcomeKeyboard,
   refReplyKeyboard,
   supportKeyboard,
+  adminMainKeyboard
 } from './keyboards';
 import { TelegramService } from './telegram.service';
 
 type SessionData = {
-  echoMode?: boolean;
+      is_admin?: boolean;
 };
 
 type BotContext = Context & { session?: SessionData };
 
 @Update()
 export class TelegramUpdate {
-  constructor(private readonly telegramService: TelegramService) {}
+  constructor(private readonly telegramService: TelegramService) { }
 
   @Start()
   async onStart(@Ctx() ctx: BotContext) {
     const from = ctx.from;
-    if (from) {
-      await this.telegramService.upsertUser({
-        telegramId: from.id,
-        username: from.username,
-        firstName: from.first_name,
-      });
-    }
+    if (!from) { await ctx.reply('Ошибка: не удалось получить информацию о пользователе. Пожалуйста, попробуйте снова.'); return; }
+    // @ts-ignore
+    const refcode = ctx.message ? Number(ctx.message.text?.split(' ')[1]) : undefined;
+    const user = await this.telegramService.createOrUpdateUser({
+      telegramId: from.id,
+      username: from.username,
+      firstName: from.first_name,
+      refId: refcode,
+    });
+    console.log("User after upsert:", { user });
 
+    ctx.session = { is_admin: user.is_admin };
     await ctx.reply(
       '🤖 Главное меню\n\nВыберите действие:',
-      mainReplyKeyboard(),
-    );
+      mainReplyKeyboard(ctx.session.is_admin),
+    ); return;
   }
 
   @Help()
@@ -75,7 +81,7 @@ export class TelegramUpdate {
   @Hears(REPLY_BTN_REF)
   async onReplyRef(@Ctx() ctx: BotContext) {
     const refsys = await this.telegramService.getRef(ctx.from?.id ?? 0);
-    
+
     await ctx.reply(
       '🤝 Реферальная система\n\nПриглашено пользователей: ' + refsys?.User.length + "\nЗаработано: " + refsys?.refEarned + '\n\nВаша реферальная ссылка: https://t.me/lessononeone_bot?start=' + ctx.from?.id,
       refReplyKeyboard(),
@@ -84,12 +90,21 @@ export class TelegramUpdate {
 
   @Hears(REPLY_BTN_BACK)
   async onReplyBack(@Ctx() ctx: BotContext) {
-    await ctx.reply('🤖 Главное меню\n\nВыберите действие:', mainReplyKeyboard());
+    await ctx.reply('🤖 Главное меню\n\nВыберите действие:', mainReplyKeyboard(ctx.session!.is_admin));
+  }
+
+  @Hears(REPLY_BTN_ADMIN_MAIN)
+  async onReplyAdminMain(@Ctx() ctx: BotContext) {
+    if (!ctx.session?.is_admin) {
+      await ctx.reply('У вас нет доступа к админ-панели.');
+      return;
+    }
+    await ctx.reply('⚙️ Админ-панель\n\nВыберите действие:', adminMainKeyboard());
   }
 
   @Hears(REPLY_BTN_SUPPORT)
   async onReplySupport(@Ctx() ctx: BotContext) {
-    await ctx.reply('🛠 Поддержка\n\nЕсли вам нужна помощь с заказом, пополнением баланса или другой проблемой, напишите агенту поддержки!\n\nЧасы работы: 9:00-21:00 (по московскому времени)', supportKeyboard ());
+    await ctx.reply('🛠 Поддержка\n\nЕсли вам нужна помощь с заказом, пополнением баланса или другой проблемой, напишите агенту поддержки!\n\nЧасы работы: 9:00-21:00 (по московскому времени)', supportKeyboard());
   }
 
   @Hears(REPLY_BTN_HELP)
@@ -120,7 +135,6 @@ export class TelegramUpdate {
     if (!ctx.session) {
       ctx.session = {};
     }
-    ctx.session.echoMode = true;
     await ctx.reply('Введите текст, который нужно повторить:');
   }
 
@@ -130,9 +144,6 @@ export class TelegramUpdate {
     if (!msg || !('text' in msg)) return;
     const text = msg.text;
     if (!text || text.startsWith('/')) return;
-    if (!ctx.session?.echoMode) return;
-
-    ctx.session.echoMode = false;
     await ctx.reply(text);
   }
 }
