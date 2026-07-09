@@ -15,18 +15,34 @@ model User {
   firstName  String?  @map("first_name")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  regRef     refSystem?   @relation(fields: [refId], references: [id]) // ссылка по которой зарег пользователь
+  balance    Float    @default(0) // rub
+  regRef     RefSystem?   @relation(fields: [refId], references: [id]) // ссылка по которой зарег пользователь
   refId      BigInt?      @map("ref_id") // id ссылки по которой зарег пользователь
-  is_admin   Boolean?       @default(false) @map("is_admin")
+  isAdmin   Boolean?       @default(false) @map("is_admin")
 
   @@map("users")
 }
 
-model refSystem {
+model RefSystem {
   id        BigInt      @id // tgid пользователя, чья реф система
   User      User[]   
   refEarned Int      @default(0) @map("ref_earned")
   @@map("ref_systems")
+}
+
+model Products {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  productData String[]       @map("product_data")
+  viewsCount  Int         @default(0) @map("views_count")
+  salesCount  Int         @default(0) @map("sales_count")
+  isPinned    Boolean     @default(false) @map("is_pinned")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("products")
 }
 
 
